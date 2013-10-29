@@ -16,7 +16,7 @@ func TestPidstat(t *testing.T) {
 		})
 	})
 
-	Describe(t, "pidstat.Get(1)", func() {
+	Describe(t, "pidstat.GetAll()", func() {
 		pidstat := NewPidstat("../misc/proc/")
 		stat, _ := pidstat.GetAll()
 		It("return map[string] of map[string]interfae{}", func() {
