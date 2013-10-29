@@ -23,9 +23,16 @@ directory "/home/vagrant/go/src/github.com/hiboma" do
   recursive true
 end
 
-directory "/usr/local/go" do
-  action :delete
-  recursive true
+%w[
+ /home/vagrant/go/src/github.com
+ /home/vagrant/go/src
+ /home/vagrant/go/pkg
+ /home/vagrant/go
+].each do |path|
+  directory path do
+    owner "vagrant"
+    group "vagrant"
+  end
 end
 
 execute "install golang" do
