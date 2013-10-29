@@ -98,71 +98,83 @@ func (self *Pidstat) GetAll() (stats map[string]Stat, err error) {
 	return
 }
 
-// func compileCondition(condition string) (compiled func(Stat, string) bool, err error) {
+func (self *Pidstat) Grep(stats map[string]Stat, args ...interface{}) (filterd map[string]Stat) {
 
-// 	chunks := strings.Split(condition, ":")
-// 	if len(chunks) != 2 {
-// 		return nil, fmt.Errorf("specified condition format is invalid: %s\n", condition)
-// 	}
+	var filter func(st Stat) bool
 
-// 	/* noeq, eq, gt, lt */
-// 	operator := chunks[0]
+	/* any better way ?? */
+	switch len(args) {
+	case 1:
+		filter = args[0].(func(st Stat) bool)
+	case 2:
+		filter = self.compileFilter(args[0].(string), args[1].(string))
+	default:
+		panic("too many arguments for Grep()")
+	}
 
-// 	value := chunks[1]
-// 	value_int, err := strconv.Atoi(value)
-// 	if err != nil {
-// 		return
-// 	}
+	filterd = make(map[string]Stat)
+	for pid, stat := range stats {
+		if filter(stat) {
+			filterd[pid] = stat
+		}
+	}
 
-// 	switch operator {
-// 	case "eq":
-// 		compiled = func(st Stat, field string) bool {
-// 			if field == "comm" || field == "state" {
-// 				return st[field] == value
-// 			} else {
-// 				return st[field] == value_int
-// 			}
-// 		}
-// 	case "gt":
-// 		compiled = func(st Stat, field string) bool {
-// 			if field == "comm" || field == "state" {
-// 				return false
-// 			} else {
-// 				return st[field].(int) > value_int
-// 			}
-// 		}
-// 	case "lt":
-// 		compiled = func(st Stat, field string) bool {
-// 			if field == "comm" || field == "state" {
-// 				return false
-// 			} else {
-// 				return st[field].(int) < value_int
-// 			}
-// 		}
-// 	case "ne":
-// 		compiled = func(st Stat, field string) bool {
-// 			if field == "comm" || field == "state" {
-// 				return st[field] != value
-// 			} else {
-// 				return st[field].(int) != value_int
-// 			}
-// 		}
-// 	default:
-// 		err = fmt.Errorf("unknown operator: %s", chunks[0])
-// 	}
+	fmt.Printf("%v", filterd)
 
-// 	return
-// }
+	return
+}
 
-// func Search(stats map[string]Stat, field string, condition string) {
-// 	f, err := compileCondition(condition)
-// 	if err != nil {
-// 		panic(err)
-// 	}
+func (self *Pidstat) compileFilter(field string, condition string) (compiled func(st Stat) bool) {
 
-// 	for _, stat := range stats {
-// 		if f(stat, field) {
-// 			fmt.Printf("%v\n", stat["comm"])
-// 		}
-// 	}
-// }
+	chunks := strings.Split(condition, ":")
+	if len(chunks) != 2 {
+		panic(fmt.Errorf("specified condition format is invalid: %s\n", condition))
+	}
+
+	/* noeq, eq, gt, lt */
+	operator := chunks[0]
+	value := chunks[1]
+	value_int, err := strconv.Atoi(value)
+	if err != nil {
+		panic(err)
+	}
+
+	switch operator {
+	case "eq":
+		compiled = func(st Stat) bool {
+			if field == "comm" || field == "state" {
+				return st[field] == value
+			} else {
+				return st[field] == value_int
+			}
+		}
+	case "gt":
+		compiled = func(st Stat) bool {
+			if field == "comm" || field == "state" {
+				return false
+			} else {
+				return st[field].(int) > value_int
+			}
+		}
+	case "lt":
+		compiled = func(st Stat) bool {
+			if field == "comm" || field == "state" {
+				return false
+			} else {
+				return st[field].(int) < value_int
+			}
+		}
+	case "ne":
+		compiled = func(st Stat) bool {
+			if field == "comm" || field == "state" {
+				return st[field] != value
+			} else {
+				return st[field].(int) != value_int
+			}
+		}
+	default:
+		err = fmt.Errorf("unknown operator: %s", chunks[0])
+	}
+
+	return
+}

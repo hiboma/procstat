@@ -25,4 +25,45 @@ func TestPidstat(t *testing.T) {
 			Expect(stat["1"]["state"]).To(Equal, "S")
 		})
 	})
+
+	Describe(t, "pidstat.Grep()", func() {
+		pidstat := NewPidstat("../misc/proc/")
+		stats, _ := pidstat.GetAll()
+
+		It("pid == 1 should return map", func() {
+			f := func(st Stat) bool {
+				return st["pid"] == 1
+			}
+			filterd := pidstat.Grep(stats, f)
+			Expect(filterd["1"]["pid"]).To(Equal, 1)
+		})
+
+		It("pid != 1 should not return map", func() {
+			f := func(st Stat) bool {
+				return st["pid"] != 1
+			}
+			filterd := pidstat.Grep(stats, f)
+			Expect(len(filterd)).To(Equal, 0)
+		})
+
+		It("'pid eq:1' should return map", func() {
+			filterd := pidstat.Grep(stats, "pid", "eq:1")
+			Expect(filterd["1"]["pid"]).To(Equal, 1)
+		})
+
+		It("'pid ne:1' should not return map", func() {
+			filterd := pidstat.Grep(stats, "pid", "ne:1")
+			Expect(len(filterd)).To(Equal, 0)
+		})
+
+		It("'rss lt:300' should return map", func() {
+			filterd := pidstat.Grep(stats, "rss", "lt:300")
+			Expect(filterd["1"]["pid"]).To(Equal, 1)
+		})
+
+		It("'rss gt:300' should not return map", func() {
+			filterd := pidstat.Grep(stats, "rss", "gt:300")
+			Expect(len(filterd)).To(Equal, 0)
+		})
+	})
 }
